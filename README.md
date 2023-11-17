@@ -1,1 +1,1 @@
-# nomnom-recipe-generator
+# nomnom
