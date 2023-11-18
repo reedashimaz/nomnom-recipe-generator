@@ -1,6 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
+from streamlit import session_state
+
 
 @st.cache_data
 def initialize_grocery_data():
@@ -17,6 +19,19 @@ def upload_receipt():
         # Add your code here for processing the uploaded receipt
 
 st.set_page_config(layout="wide")
+
+
+if 'clicked' not in st.session_state:
+    st.session_state.clicked = False
+
+if 'total_groceries' not in st.session_state:
+    st.session_state.total_groceries = {}
+
+if 'grocery_data' not in st.session_state:
+    st.session_state.grocery_data = pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date'])
+
+def click_save():
+	session_state.clicked = True
 
 # Define the HTML and CSS styling for the title
 title_html = """
@@ -52,45 +67,72 @@ caption_html = """
 	"""
 	
 st.markdown(caption_html, unsafe_allow_html=True)
-
-
 ingredient_quantities = {}
 # Initialize or retrieve the existing dataframe to store grocery items
-grocery_data = initialize_grocery_data()
+#grocery_data = initialize_grocery_data()
 
 tab1, tab2, tab3 = st.tabs(["Add Groceries", "Available Groceries", "Create recipes"])
     
 with tab1:
-    st.subheader("Add Groceries - Manually Input Items")
-    # User input for the grocery item
-    grocery_data = st.data_editor(grocery_data, num_rows="dynamic", hide_index=True)
-    st.write("---")
-    st.subheader("Add Groceries - OCR of Receipt")
+    if not session_state.clicked:
+        st.subheader("Add Groceries - Manually Input Items")
+         # User input for the grocery item
+        session_state.grocery_data = st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), key="manual_input", num_rows="dynamic", hide_index=True)
+        st.write("---")
+        st.subheader("Add Groceries - OCR of Receipt")
+        print("Before")
+        print(session_state.grocery_data)
+        st.button("Press me to update Tab 2", on_click=click_save)
+    else:
+        st.subheader("Add Groceries - Manually Input Items")
+         # User input for the grocery item
+        st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), num_rows="dynamic", hide_index=True)
+        st.write("---")
+        st.subheader("Add Groceries - OCR of Receipt")
+        print("Before")
+        print(session_state.grocery_data)
+        st.button("Press me to update Tab 2", on_click=click_save)
+
+
    
-def ingredient_html_maker(ingredient, num_ingredients):
+
+
+
+
+
+
+
+def ingredient_html_maker(ingredient, num_ingredients, map_for_grocery):
     return_val = f"<div class=\"card\" style=\"background-color: #dedede; padding: 10px; margin: 5px; border-radius: 10px;\">\n"
     return_val += f"<h3>{ingredient}</h3>\n"  # Ingredient name
     return_val += f"<p>Quantity: <span id='quantity_{ingredient}'>{num_ingredients}</span></p>\n"
-    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '-')\">-</button>\n"
-    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '+')\">+</button>\n"
+    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '-', {map_for_grocery})\">-</button>\n"
+    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '+', {map_for_grocery})\">+</button>\n"
     return_val += "</div>\n"
     return return_val
 
-with tab2:
-    st.table(grocery_data)  # Display the overall grocery list
-    list_of_groceries = {
-        "Ingredient 1": 2,
-        "Ingredient 2": 1,
-        "Ingredient 3": 3,
-        "Ingredient 4": 1,
-        "Ingredient 5": 2,
-        "tomatoes": 5,
-        "lettuce": 1,
-    }
+def list_display(total_groceries):
+    list_html = ''
+    with open('List.html') as list_file:
+        list_html = list_file.read()
+    
+    list_html_without_end = list_html[:-6]
+    end = list_html[-6:]
+    final_list_html = list_html_without_end + "\n"
 
+    for item in total_groceries:
+        final_list_html += ingredient_html_maker(item, total_groceries[item], total_groceries)
+    
+    final_list_html += "\n" + end
+
+    return components.html(final_list_html + javascript_code, height=500)
+
+
+
+with tab2: 
     javascript_code = """
 <script>
-    function updateQuantity(ingredient, operation) {
+    function updateQuantity(ingredient, operation, grocery_data) {
         // Get the current quantity
         var quantityElement = document.getElementById('quantity_' + ingredient);
         var currentQuantity = parseInt(quantityElement.innerText);
@@ -101,29 +143,27 @@ with tab2:
         } else if (operation === '-') {
             currentQuantity = Math.max(0, currentQuantity - 1);
         }
-
+		grocery_data[ingredient] = currentQuantity;
+        console.log(grocery_data);
         // Update the quantity display
         quantityElement.innerText = currentQuantity;
-
-        // Communicate with Streamlit app
-        Streamlit.setComponentValue(JSON.stringify({ ingredient: ingredient, quantity: currentQuantity }));
     }
 </script>
 """
+    if session_state.clicked:
+        for i in range(len(session_state.grocery_data)):
+            existing_quantity = st.session_state.total_groceries.get(session_state.grocery_data["Name"][i], 0)
+            st.session_state.total_groceries[session_state.grocery_data["Name"][i]] = existing_quantity + int(session_state.grocery_data["Quantity"][i])
+        print(st.session_state.total_groceries)
+        list_display(st.session_state.total_groceries)
+        session_state.clicked = False
 
-    list_html = ''
-    with open('List.html') as list_file:
-        list_html = list_file.read()
-    
-    list_html_without_end = list_html[:-6]
-    end = list_html[-6:]
-    final_list_html = list_html_without_end + "\n"
-    
-    for ingredient in list_of_groceries:
-        final_list_html += ingredient_html_maker(ingredient, list_of_groceries[ingredient])
-    
-    final_list_html += "\n" + end
-    components.html(final_list_html + javascript_code, height=500)
+
+
+
+
+
+
 
 with tab3:
     st.header("Create recipes")
