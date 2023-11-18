@@ -2,41 +2,63 @@ from openai import OpenAI
 import streamlit as st
 import os
 from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv()) # read local .env file
+
+_ = load_dotenv(find_dotenv())  # read local .env file
 
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
-print(openai_api_key)
+st.title("💬 NomNom Bot")
+st.caption("🚀 Your personal recipe generator!")
 
-st.title("💬 Recipe Bot")
-st.caption("🚀 Here's a recipe ")
+ingredients = {
+    'Tomatoes' : 3,
+    'Pasta' : 1
+}
+cuisine = 'Italian'
+diet_res = 'Vegetarian'
+
+content_template = """
+I have scanned/entered my grocery store receipts. Here are the items and their quantity (in the form of a dictionary) I have purchased: 
+{ingredients}.
+My dietary restrictions include {diet_res}. I am in the mood for {cuisine} recipes. Give me a detailed recipe using ONLY
+the ingredients I have. I also have common pantry items like salt, pepper, olive oil, and basic spices. Start your response with
+"Howdy, I'm the NomNom Bot!" and end by asking if the user has any follow-up questions or needs any additional resources.
+"""
+
+# Initialize the chat with an initial user message
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Here's a recipe suggestion! How else can I help you?"}]
+    st.session_state["messages"] = [
+        {"role": "user", "content": content_template.format(ingredients=ingredients, diet_res=diet_res, cuisine=cuisine)}]
 
-for msg in st.session_state.messages:
+# Display the chat messages
+for msg in st.session_state.messages[1:]:
     st.chat_message(msg["role"]).write(msg["content"])
 
+# Generate a response for the initial user message
+if len(st.session_state.messages) == 1:
+    client = OpenAI(api_key=openai_api_key)
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo", 
+        messages=st.session_state.messages,
+        max_tokens=2048,
+        n=1,
+        stop=None,
+        temperature=0.5
+    )
+
+    msg = response.choices[0].message.content
+    st.session_state.messages.append({"role": "assistant", "content": msg})
+    st.chat_message("assistant").write(msg)
+
+# User can ask follow-up questions
 if prompt := st.chat_input():
     if not openai_api_key:
-        st.info("Please enter API key again bruh")
+        st.info("API key is not valid.")
         st.stop()
 
     client = OpenAI(api_key=openai_api_key)
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-
-    chatbot_prompt = """
-    As an advanced chatbot, your primary goal is to assist users to the best of your ability. This involves generating recipes by 
-    taking in the ingredients from a grocery store receipt, dietary restrictions and cuisine preferences and producing a response in 
-    a format that includes the ingredients and cooking steps.
-
-    <conversation_history>
-
-    User: I have scanned/entered my grocery store receipts. Here are the items I have purchased: [Tomato sauce, pasta]
-    User: My dietary restrictions include vegetarian.
-    User: I am in mood for Italian recipes.
-    Chatbot:
-    """
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo", 
@@ -46,7 +68,7 @@ if prompt := st.chat_input():
         stop=None,
         temperature=0.5
     )
-    
+
     msg = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": msg})
     st.chat_message("assistant").write(msg)
