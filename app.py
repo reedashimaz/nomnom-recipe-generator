@@ -1,8 +1,4 @@
-<<<<<<< Updated upstream
-import streamlit as st
-import pandas as pd
-import numpy as np
-=======
+
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -12,8 +8,7 @@ from PIL import Image, ImageDraw
 from matplotlib import pyplot as plt
 import streamlit.components.v1 as components
 import re
-
->>>>>>> Stashed changes
+from streamlit import session_state
 
 @st.cache_data
 def initialize_grocery_data():
@@ -22,23 +17,31 @@ def initialize_grocery_data():
 def manually_input_items(grocery_data):
     return grocery_data
 
-<<<<<<< Updated upstream
+
 def upload_receipt():
     st.header("Upload Receipt")
     uploaded_file = st.file_uploader("Choose a receipt file", type=["jpg", "jpeg", "png", "pdf"])
     if uploaded_file is not None:
         st.success("Receipt uploaded successfully!")
         # Add your code here for processing the uploaded receipt
-
-def main():
-    st.set_page_config(layout="wide")
-=======
 st.set_page_config(layout="wide")
->>>>>>> Stashed changes
 
-    # Define the HTML and CSS styling for the title
-    title_html = """
-    <html>
+
+if 'clicked' not in st.session_state:
+    st.session_state.clicked = False
+
+if 'total_groceries' not in st.session_state:
+    st.session_state.total_groceries = {}
+
+if 'grocery_data' not in st.session_state:
+    st.session_state.grocery_data = pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date'])
+
+def click_save():
+	session_state.clicked = True
+
+# Define the HTML and CSS styling for the title
+title_html = """
+<html>
     <head>
     <link href='https://fonts.googleapis.com/css?family=Cedarville Cursive' rel='stylesheet'>
     <style>
@@ -62,37 +65,46 @@ st.set_page_config(layout="wide")
     """
 
     # Use st.markdown to display the title with the specified font
-    st.markdown(title_html, unsafe_allow_html=True)
+st.markdown(title_html, unsafe_allow_html=True)
     
-    caption_html = """
+caption_html = """
     <div style="display: flex; justify-content: center; align-items: center; font-style: italic; font-weight: bold;">
         <p>Helping College Students Manage Their Groceries</p>
     </div>
 	"""
 	
-    st.markdown(caption_html, unsafe_allow_html=True)
+st.markdown(caption_html, unsafe_allow_html=True)
 
-
-<<<<<<< Updated upstream
     # Initialize or retrieve the existing dataframe to store grocery items
-    grocery_data = initialize_grocery_data()
-
-    tab1, tab2, tab3 = st.tabs(["Add Groceries", "Available Groceries", "Create recipes"])
-=======
-ingredient_quantities = {}
-# Initialize or retrieve the existing dataframe to store grocery items
 grocery_data = initialize_grocery_data()
-df = pd.DataFrame()
 
 tab1, tab2, tab3 = st.tabs(["Add Groceries", "Available Groceries", "Create recipes"])
+ingredient_quantities = {}
+# Initialize or retrieve the existing dataframe to store grocery items
+df = pd.DataFrame()
     
 with tab1:
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("Add Groceries")
-        st.write("You can manually input your groceries below or scroll down to upload a grocery receipt!")
-        grocery_data = st.data_editor(grocery_data, num_rows="dynamic", hide_index=True, use_container_width=True)
+        if not session_state.clicked:
+            st.subheader("Add Groceries - Manually Input Items")
+             # User input for the grocery item
+            session_state.grocery_data = st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), key="manual_input", num_rows="dynamic", hide_index=True)
+            st.write("---")
+            st.subheader("Add Groceries - OCR of Receipt")
+            print("Before")
+            print(session_state.grocery_data)
+            st.button("Press me to update Tab 2", on_click=click_save)
+        else:
+            st.subheader("Add Groceries - Manually Input Items")
+             # User input for the grocery item
+            st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), num_rows="dynamic", hide_index=True)
+            st.write("---")
+            st.subheader("Add Groceries - OCR of Receipt")
+            print("Before")
+            print(session_state.grocery_data)
+            st.button("Press me to update Tab 2", on_click=click_save)
         
         # User input for the grocery item
         
@@ -134,34 +146,74 @@ with col3:
         df = df[~df['Text'].str.contains(r'[\d]')]
         st.table(df)
 
-        
 
 
-def ingredient_html_maker(ingredient, num_ingredients):
+def ingredient_html_maker(ingredient, num_ingredients, map_for_grocery):
     return_val = f"<div class=\"card\" style=\"background-color: #dedede; padding: 10px; margin: 5px; border-radius: 10px;\">\n"
     return_val += f"<h3>{ingredient}</h3>\n"  # Ingredient name
     return_val += f"<p>Quantity: <span id='quantity_{ingredient}'>{num_ingredients}</span></p>\n"
-    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '-')\">-</button>\n"
-    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '+')\">+</button>\n"
+    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '-', {map_for_grocery})\">-</button>\n"
+    return_val += f"<button onclick=\"updateQuantity('{ingredient}', '+', {map_for_grocery})\">+</button>\n"
     return_val += "</div>\n"
     return return_val
->>>>>>> Stashed changes
 
-    with tab1:
-        st.subheader("Add Groceries - Manually Input Items")
-        # User input for the grocery item
-        grocery_data = st.data_editor(grocery_data, num_rows="dynamic", hide_index=True)
-        st.write("---")
-        st.subheader("Add Groceries - OCR of Receipt")
+def list_display(total_groceries):
+    list_html = ''
+    with open('List.html') as list_file:
+        list_html = list_file.read()
+    
+    list_html_without_end = list_html[:-6]
+    end = list_html[-6:]
+    final_list_html = list_html_without_end + "\n"
+
+    for item in total_groceries:
+        final_list_html += ingredient_html_maker(item, total_groceries[item], total_groceries)
+    
+    final_list_html += "\n" + end
+
+    return components.html(final_list_html + javascript_code, height=500)
 
 
-    with tab2:
-        st.header("Available Groceries")
-        st.table(grocery_data)  # Display the overall grocery list
 
-    with tab3:
-        st.header("Create recipes")
+with tab2: 
+    javascript_code = """
+<script>
+    function updateQuantity(ingredient, operation, grocery_data) {
+        // Get the current quantity
+        var quantityElement = document.getElementById('quantity_' + ingredient);
+        var currentQuantity = parseInt(quantityElement.innerText);
 
+        // Update the quantity based on the operation
+        if (operation === '+') {
+            currentQuantity += 1;
+        } else if (operation === '-') {
+            currentQuantity = Math.max(0, currentQuantity - 1);
+        }
+		grocery_data[ingredient] = currentQuantity;
+        console.log(grocery_data);
+        // Update the quantity display
+        quantityElement.innerText = currentQuantity;
+    }
+</script>
+"""
+    if session_state.clicked:
+        for i in range(len(session_state.grocery_data)):
+            existing_quantity = st.session_state.total_groceries.get(session_state.grocery_data["Name"][i], 0)
+            st.session_state.total_groceries[session_state.grocery_data["Name"][i]] = int(existing_quantity) + int(session_state.grocery_data["Quantity"][i])
+        print(st.session_state.total_groceries)
+        list_display(st.session_state.total_groceries)
+        session_state.clicked = False
+
+
+
+
+
+
+
+
+with tab3:
+    st.header("Create recipes")
+    
     st.markdown("""
     <style>
         
@@ -190,5 +242,3 @@ def ingredient_html_maker(ingredient, num_ingredients):
 
     </style>""", unsafe_allow_html=True)
 
-if __name__ == "__main__":
-    main()
