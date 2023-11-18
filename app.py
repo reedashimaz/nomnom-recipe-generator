@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import pandas as pd
 
 @st.cache_data
 def initialize_grocery_data():
@@ -15,12 +16,11 @@ def upload_receipt():
         st.success("Receipt uploaded successfully!")
         # Add your code here for processing the uploaded receipt
 
-def main():
-    st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")
 
-    # Define the HTML and CSS styling for the title
-    title_html = """
-    <html>
+# Define the HTML and CSS styling for the title
+title_html = """
+<html>
     <head>
     <link href='https://fonts.googleapis.com/css?family=Cedarville Cursive' rel='stylesheet'>
     <style>
@@ -43,15 +43,15 @@ def main():
     """
 
     # Use st.markdown to display the title with the specified font
-    st.markdown(title_html, unsafe_allow_html=True)
+st.markdown(title_html, unsafe_allow_html=True)
     
-    caption_html = """
+caption_html = """
     <div style="display: flex; justify-content: center; align-items: center; font-style: italic; font-weight: bold;">
         <p>Helping College Students Keep Track of Groceries</p>
     </div>
 	"""
 	
-    st.markdown(caption_html, unsafe_allow_html=True)
+st.markdown(caption_html, unsafe_allow_html=True)
 
 
 ingredient_quantities = {}
@@ -156,5 +156,3 @@ with tab3:
 
     </style>""", unsafe_allow_html=True)
 
-if __name__ == "__main__":
-    main()
