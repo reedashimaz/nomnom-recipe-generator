@@ -153,7 +153,7 @@ with tab2:
     if session_state.clicked:
         for i in range(len(session_state.grocery_data)):
             existing_quantity = st.session_state.total_groceries.get(session_state.grocery_data["Name"][i], 0)
-            st.session_state.total_groceries[session_state.grocery_data["Name"][i]] = existing_quantity + int(session_state.grocery_data["Quantity"][i])
+            st.session_state.total_groceries[session_state.grocery_data["Name"][i]] = int(existing_quantity) + int(session_state.grocery_data["Quantity"][i])
         print(st.session_state.total_groceries)
         list_display(st.session_state.total_groceries)
         session_state.clicked = False
