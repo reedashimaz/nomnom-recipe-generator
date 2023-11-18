@@ -1,8 +1,14 @@
-import streamlit as st
-import streamlit.components.v1 as components
-import pandas as pd
-from streamlit import session_state
 
+import pandas as pd
+import numpy as np
+import streamlit as st
+import easyocr
+import PIL
+from PIL import Image, ImageDraw
+from matplotlib import pyplot as plt
+import streamlit.components.v1 as components
+import re
+from streamlit import session_state
 
 @st.cache_data
 def initialize_grocery_data():
@@ -11,13 +17,13 @@ def initialize_grocery_data():
 def manually_input_items(grocery_data):
     return grocery_data
 
+
 def upload_receipt():
     st.header("Upload Receipt")
     uploaded_file = st.file_uploader("Choose a receipt file", type=["jpg", "jpeg", "png", "pdf"])
     if uploaded_file is not None:
         st.success("Receipt uploaded successfully!")
         # Add your code here for processing the uploaded receipt
-
 st.set_page_config(layout="wide")
 
 
@@ -48,6 +54,7 @@ title_html = """
         font-family: 'Cedarville Cursive';
         font-size: 56px;
     	display: inline-block;
+        margin_bottom: 3px;
     }
     </style>
     </head>
@@ -62,43 +69,82 @@ st.markdown(title_html, unsafe_allow_html=True)
     
 caption_html = """
     <div style="display: flex; justify-content: center; align-items: center; font-style: italic; font-weight: bold;">
-        <p>Helping College Students Keep Track of Groceries</p>
+        <p>Helping College Students Manage Their Groceries</p>
     </div>
 	"""
 	
 st.markdown(caption_html, unsafe_allow_html=True)
-ingredient_quantities = {}
-# Initialize or retrieve the existing dataframe to store grocery items
-#grocery_data = initialize_grocery_data()
+
+    # Initialize or retrieve the existing dataframe to store grocery items
+grocery_data = initialize_grocery_data()
 
 tab1, tab2, tab3 = st.tabs(["Add Groceries", "Available Groceries", "Create recipes"])
+ingredient_quantities = {}
+# Initialize or retrieve the existing dataframe to store grocery items
+df = pd.DataFrame()
     
 with tab1:
-    if not session_state.clicked:
-        st.subheader("Add Groceries - Manually Input Items")
-         # User input for the grocery item
-        session_state.grocery_data = st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), key="manual_input", num_rows="dynamic", hide_index=True)
-        st.write("---")
-        st.subheader("Add Groceries - OCR of Receipt")
-        print("Before")
-        print(session_state.grocery_data)
-        st.button("Press me to update Tab 2", on_click=click_save)
-    else:
-        st.subheader("Add Groceries - Manually Input Items")
-         # User input for the grocery item
-        st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), num_rows="dynamic", hide_index=True)
-        st.write("---")
-        st.subheader("Add Groceries - OCR of Receipt")
-        print("Before")
-        print(session_state.grocery_data)
-        st.button("Press me to update Tab 2", on_click=click_save)
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        if not session_state.clicked:
+            st.subheader("Add Groceries - Manually Input Items")
+             # User input for the grocery item
+            session_state.grocery_data = st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), key="manual_input", num_rows="dynamic", hide_index=True)
+            st.write("---")
+            st.subheader("Add Groceries - OCR of Receipt")
+            print("Before")
+            print(session_state.grocery_data)
+            st.button("Press me to update Tab 2", on_click=click_save)
+        else:
+            st.subheader("Add Groceries - Manually Input Items")
+             # User input for the grocery item
+            st.data_editor(pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date']), num_rows="dynamic", hide_index=True)
+            st.write("---")
+            st.subheader("Add Groceries - OCR of Receipt")
+            print("Before")
+            print(session_state.grocery_data)
+            st.button("Press me to update Tab 2", on_click=click_save)
+        
+        # User input for the grocery item
+        
+    
+    with col2:
+        image1 = Image.open('picture1forwebsite.png')
+        st.image(image1, width=400)
+    
+    st.write("---")
+    
+    col3, col4 = st.columns([1, 1.5])
+with col3:
+    st.subheader("Upload receipt instead")
+    uploaded_file = st.file_uploader("Choose a receipt file", type=["jpg", "jpeg", "png"])
+    if uploaded_file is not None:
+        st.success("Receipt uploaded successfully!")
+    st.write("")
 
+    receipt_image = Image.open('testreceipt1.jpeg')
+    st.image(receipt_image)
+    reader = easyocr.Reader(['en'], gpu=False)
+    result = reader.readtext(np.array(receipt_image))
 
-   
+    text_list = []
+    confidence_list = []
 
+    for idx in range(len(result)):
+        pred_coor = result[idx][0]
+        pred_text = result[idx][1]
+        pred_confidence = result[idx][2]
 
+        text_list.append(pred_text)
+        confidence_list.append(pred_confidence)
 
+    df = pd.DataFrame({'Text': text_list, 'Confidence': confidence_list})   
 
+    with col4:
+        st.subheader("Updated Grocery List")
+        df = df[~df['Text'].str.contains(r'[\d]')]
+        st.table(df)
 
 
 
