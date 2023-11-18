@@ -1,7 +1,12 @@
 from openai import OpenAI
 import streamlit as st
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv()) # read local .env file
 
-openai_api_key = "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"
+openai_api_key = os.getenv('OPENAI_API_KEY')
+
+print(openai_api_key)
 
 st.title("💬 Recipe Bot")
 st.caption("🚀 Here's a recipe ")
@@ -33,10 +38,9 @@ if prompt := st.chat_input():
     Chatbot:
     """
 
-    response = client.completions.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo", 
         messages=st.session_state.messages,
-        prompt="hi",
         max_tokens=2048,
         n=1,
         stop=None,
