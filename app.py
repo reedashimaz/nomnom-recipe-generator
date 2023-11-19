@@ -26,6 +26,7 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
 video_file_id = '1miZ6Zz4lt0wxTGbrtR8IltVr_fOPX6Vr'
 video_url = f'https://drive.google.com/uc?export=view&id={video_file_id}'
 
+
 @st.cache_data
 def initialize_grocery_data():
     return pd.DataFrame(columns=['Name', 'Quantity', 'Additional Notes/Expiration Date'])
@@ -33,13 +34,13 @@ def initialize_grocery_data():
 def manually_input_items(grocery_data):
     return grocery_data
 
+
 def upload_receipt():
     st.header("Upload Receipt")
     uploaded_file = st.file_uploader("Choose a receipt file", type=["jpg", "jpeg", "png", "pdf"])
     if uploaded_file is not None:
         st.success("Receipt uploaded successfully!")
         # Add your code here for processing the uploaded receipt
-
 st.set_page_config(layout="wide")
 
 
@@ -85,6 +86,7 @@ title_html = """
         font-family: 'Cedarville Cursive';
         font-size: 56px;
     	display: inline-block;
+        margin_bottom: 3px;
     }
     </style>
     </head>
@@ -99,16 +101,17 @@ st.markdown(title_html, unsafe_allow_html=True)
     
 caption_html = """
     <div style="display: flex; justify-content: center; align-items: center; font-style: italic; font-weight: bold;">
-        <p>Helping College Students Keep Track of Groceries</p>
+        <p>Helping College Students Manage Their Groceries</p>
     </div>
 	"""
 	
 st.markdown(caption_html, unsafe_allow_html=True)
-ingredient_quantities = {}
-# Initialize or retrieve the existing dataframe to store grocery items
-#grocery_data = initialize_grocery_data()
+
+    # Initialize or retrieve the existing dataframe to store grocery items
+grocery_data = initialize_grocery_data()
 
 tab1, tab2, tab3 = st.tabs(["Add Groceries", "Available Groceries", "Create recipes"])
+
 
 df = pd.DataFrame()
  
@@ -182,9 +185,6 @@ with tab1:
 
 
 
-
-
-
 def ingredient_html_maker(ingredient, num_ingredients, map_for_grocery):
     return_val = f"<div class=\"card\" style=\"background-color: #dedede; padding: 10px; margin: 5px; border-radius: 10px;\">\n"
     return_val += f"<h3>{ingredient}</h3>\n"  # Ingredient name
@@ -253,7 +253,7 @@ with tab2:
 
 
 with tab3:
-    
+    st.write("hi")
     # # Create columns for layout
     # col1, col2 = st.columns([0.20, 0.80])
 
